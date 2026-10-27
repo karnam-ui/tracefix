@@ -6,6 +6,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from tracefix.repo.models import (
+    ConnectedRepository,
+    ConnectRepositoryRequest,
+    IngestProgressResponse,
+    RepositoryStatus,
+    RepositorySummary,
+)
+
 
 class HealthResponse(BaseModel):
     status: str = "ok"
@@ -15,6 +23,8 @@ class HealthResponse(BaseModel):
     active_cases_count: int
     persisted_graphs_count: int
     incident_memory_count: int
+    connected_repos_count: int = 0
+    active_repo_id: str | None = None
 
 
 class CaseSummary(BaseModel):
@@ -39,6 +49,7 @@ class GraphSummary(BaseModel):
     edge_count: int
     sha256: str
     is_live: bool = True
+    storage_type: str = "falkordb"  # "falkordb" or "disk_snapshot"
 
 
 class NodeDetail(BaseModel):
@@ -67,18 +78,28 @@ class NeighborhoodResponse(BaseModel):
     center_id: str | None = None
     nodes: list[NodeDetail]
     edges: list[EdgeDetail]
+    source: str = "live_falkordb"  # "live_falkordb" or "snapshot_artifact"
 
 
 class InvestigateRequest(BaseModel):
     case_id: str | None = None
+    repo_id: str | None = Field(
+        default=None, description="Registered repo_id, defaults to active repo"
+    )
     repo: str = "requests"
-    revision: str = "22623bd8c265b78b161542663ee980738441c307"
+    revision: str | None = Field(
+        default=None, description="Target revision SHA, defaults to repo active SHA"
+    )
     bug_report: str = ""
+    mode: str = Field(default="trace", description="trace, find, snippets, or repair")
     strategy: str = Field(default="graph", description="lexical, graph, fused, or memory")
     budget: int = Field(default=4000, description="Token budget limit")
-    mock: bool = Field(default=True, description="True for deterministic offline repair/sandbox")
+    mock: bool = Field(default=False, description="True for deterministic offline mock/test")
     execute_repair: bool = Field(
-        default=True, description="Run repair state machine after retrieval"
+        default=False, description="Run repair generation & sandbox verification"
+    )
+    compare_baseline: bool = Field(
+        default=False, description="Run simultaneous lexical baseline comparison"
     )
 
 
@@ -114,6 +135,8 @@ class VerificationSummaryResponse(BaseModel):
     passed_tests: list[str] = Field(default_factory=list)
     failed_tests: list[str] = Field(default_factory=list)
     duration_seconds: float = 0.0
+    command: str | None = None
+    details: str | None = None
 
 
 class MemoryMatchResponse(BaseModel):
@@ -134,11 +157,26 @@ class LifecycleStage(BaseModel):
     elapsed_ms: float = 0.0
 
 
+class BaselineComparisonResponse(BaseModel):
+    baseline_strategy: str = "lexical"
+    evaluated_strategy: str = "graph"
+    baseline_tokens: int
+    evaluated_tokens: int
+    token_delta: int  # baseline_tokens - evaluated_tokens (positive = reduction)
+    reduction_pct: float | None = None  # None if baseline_tokens <= 0
+    baseline_items_count: int
+    evaluated_items_count: int
+    common_symbols: list[str] = Field(default_factory=list)
+    common_files: list[str] = Field(default_factory=list)
+
+
 class InvestigateResponse(BaseModel):
     case_id: str
     repo: str
+    repo_id: str | None = None
     revision: str
     strategy_used: str
+    mode: str = "trace"
     stages: list[LifecycleStage]
     retrieval: list[RetrievalItemResponse] = Field(default_factory=list)
     context_budget: dict[str, Any] = Field(default_factory=dict)
@@ -152,6 +190,10 @@ class InvestigateResponse(BaseModel):
     ground_truth_files: list[str] = Field(default_factory=list)
     overall_status: str = "completed"
     error: str | None = None
+    fallback_occurred: bool = False
+    fallback_reason: str | None = None
+    baseline_comparison: BaselineComparisonResponse | None = None
+    is_mock: bool = False
 
 
 class IncidentMemoryItem(BaseModel):
@@ -163,3 +205,27 @@ class IncidentMemoryItem(BaseModel):
     patch_diff: str
     verification_status: str
     created_at: str
+
+
+__all__ = [
+    "BaselineComparisonResponse",
+    "CaseSummary",
+    "ConnectRepositoryRequest",
+    "ConnectedRepository",
+    "ContextItemResponse",
+    "EdgeDetail",
+    "GraphSummary",
+    "HealthResponse",
+    "IncidentMemoryItem",
+    "IngestProgressResponse",
+    "InvestigateRequest",
+    "InvestigateResponse",
+    "LifecycleStage",
+    "MemoryMatchResponse",
+    "NeighborhoodResponse",
+    "NodeDetail",
+    "RepositoryStatus",
+    "RepositorySummary",
+    "RetrievalItemResponse",
+    "VerificationSummaryResponse",
+]

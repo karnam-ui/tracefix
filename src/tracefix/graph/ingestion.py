@@ -305,20 +305,14 @@ def _walk_definitions(body: list[ast.stmt], ctx: _WalkCtx) -> None:
             ctx.sink.add(
                 "CONTAINS", parent_id, node_id, Provenance.OBSERVED, "python-ast", ctx.revision
             )
-            _walk_definitions(
-                stmt.body, _WalkCtx(**{**ctx.__dict__, "parent_class_qn": qn})
-            )
+            _walk_definitions(stmt.body, _WalkCtx(**{**ctx.__dict__, "parent_class_qn": qn}))
         elif isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
             qn = (
                 f"{_parent_class_qn(ctx)}.{stmt.name}"
                 if _parent_class_qn(ctx)
                 else f"{ctx.module_qn}.{stmt.name}"
             )
-            kind = (
-                "Test"
-                if ctx.is_test_file and stmt.name.startswith("test_")
-                else "Function"
-            )
+            kind = "Test" if ctx.is_test_file and stmt.name.startswith("test_") else "Function"
             node_id = make_entity_id(ctx.repo_url, kind, qn)
             segment = "\n".join(ctx.lines[stmt.lineno - 1 : (stmt.end_lineno or stmt.lineno)])
             ctx.nodes[node_id] = Node(
@@ -452,8 +446,12 @@ def _resolve_import_edges(
             if target_id is None or target_id == source_module_id:
                 continue
             sink.add(
-                "IMPORTS", source_module_id, target_id,
-                Provenance.OBSERVED, "import-resolution", revision,
+                "IMPORTS",
+                source_module_id,
+                target_id,
+                Provenance.OBSERVED,
+                "import-resolution",
+                revision,
             )
 
 
@@ -511,9 +509,13 @@ def _resolve_call_edges(
                 continue
             target_id, provenance, confidence = resolved
             sink.add(
-                "CALLS", node_id, target_id, provenance,
+                "CALLS",
+                node_id,
+                target_id,
+                provenance,
                 "name-resolution" if provenance is Provenance.OBSERVED else "name-heuristic",
-                revision, confidence=confidence,
+                revision,
+                confidence=confidence,
             )
 
 
@@ -592,8 +594,12 @@ def _add_coverage_edges(
             mentions_module = func_module in text or func_module.split(".")[0] in text
             if mentions_module and simple in text:
                 sink.add(
-                    "COVERED_BY", func.entity_id, test.entity_id,
-                    Provenance.INFERRED, "test-name-convention", revision,
+                    "COVERED_BY",
+                    func.entity_id,
+                    test.entity_id,
+                    Provenance.INFERRED,
+                    "test-name-convention",
+                    revision,
                     confidence="heuristic",
                 )
 
@@ -645,15 +651,17 @@ def _add_history(
             },
             ingested_at=stamp,
         )
-        sink.add(
-            "AUTHORED_BY", commit_id, person_id, Provenance.OBSERVED, "git-log", revision
-        )
+        sink.add("AUTHORED_BY", commit_id, person_id, Provenance.OBSERVED, "git-log", revision)
         for rel in commit["files"]:
             file_id = make_entity_id(repo_url, "File", rel)
             if file_id in nodes:
                 sink.add(
-                    "MODIFIED_IN", file_id, commit_id,
-                    Provenance.OBSERVED, "git-log", revision,
+                    "MODIFIED_IN",
+                    file_id,
+                    commit_id,
+                    Provenance.OBSERVED,
+                    "git-log",
+                    revision,
                 )
                 file_touch_counts[rel][person_key] += 1
 
@@ -668,9 +676,14 @@ def _add_history(
         if person_id not in nodes:
             continue
         sink.add(
-            "OWNED_BY", node_id, person_id, Provenance.INFERRED,
-            "git-history-ownership-heuristic", revision,
-            confidence="heuristic", weight=round(touches / total, 4),
+            "OWNED_BY",
+            node_id,
+            person_id,
+            Provenance.INFERRED,
+            "git-history-ownership-heuristic",
+            revision,
+            confidence="heuristic",
+            weight=round(touches / total, 4),
         )
     return True
 
@@ -679,7 +692,10 @@ def git_head(repo_root: Path) -> str | None:
     try:
         out = subprocess.run(
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=30, check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -694,10 +710,18 @@ def git_commits(repo_root: Path, max_commits: int) -> list[dict[str, Any]] | Non
     try:
         log = subprocess.run(
             [
-                "git", "-C", str(repo_root), "log", f"-n{max_commits}",
-                f"--format={fmt}", "--name-only",
+                "git",
+                "-C",
+                str(repo_root),
+                "log",
+                f"-n{max_commits}",
+                f"--format={fmt}",
+                "--name-only",
             ],
-            capture_output=True, text=True, timeout=120, check=False,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None

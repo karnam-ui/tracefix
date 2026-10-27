@@ -163,9 +163,7 @@ class GraphGuidedStrategy:
         else:
             config["graph_status"] = "disabled"
 
-        ranked, total_candidates = self._build_items(
-            seed_items, seed_rank, paths, limits.max_items
-        )
+        ranked, total_candidates = self._build_items(seed_items, seed_rank, paths, limits.max_items)
         elapsed = _ms(started)
 
         if partial_reason is None:
@@ -185,9 +183,7 @@ class GraphGuidedStrategy:
             )
 
         if not ranked:
-            raise RetrievalError(
-                f"graph_guided produced no usable items ({partial_reason.value})"
-            )
+            raise RetrievalError(f"graph_guided produced no usable items ({partial_reason.value})")
         return RetrievalResult(
             items=ranked,
             complete=False,
@@ -241,9 +237,7 @@ class GraphGuidedStrategy:
                         evidence_id=evidence_id,
                         strategy=self.name,
                         rank=1,
-                        score=round(
-                            1.0 / (path.depth + 1) + 1.0 / (origin_rank + 1), 6
-                        ),
+                        score=round(1.0 / (path.depth + 1) + 1.0 / (origin_rank + 1), 6),
                         target=EvidenceTarget(
                             file=path.node.path or "",
                             symbol=path.node.qualified_name,

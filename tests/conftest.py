@@ -14,9 +14,19 @@ MINI_REPO_SOURCE = FIXTURES / "mini_repo"
 
 def _git(repo: Path, *args: str) -> str:
     out = subprocess.run(
-        ["git", "-C", str(repo), "-c", "user.email=fixture@tracefix.dev", "-c",
-         "user.name=TraceFix Fixture", *args],
-        capture_output=True, text=True, check=True,
+        [
+            "git",
+            "-C",
+            str(repo),
+            "-c",
+            "user.email=fixture@tracefix.dev",
+            "-c",
+            "user.name=TraceFix Fixture",
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return out.stdout.strip()
 

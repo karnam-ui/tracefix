@@ -248,9 +248,7 @@ class EvaluationRunner:
             )
 
         ranks = [
-            rank
-            for rank, item in enumerate(result.items, start=1)
-            if self.relevance(case, item)
+            rank for rank, item in enumerate(result.items, start=1) if self.relevance(case, item)
         ]
         hits = {str(k): hit_at_k(ranks, k) for k in self.metrics.k_values}
         recalls = {str(k): recall_at_k(ranks, k, n_gt) for k in self.metrics.k_values}
@@ -310,9 +308,7 @@ class EvaluationRunner:
 
         latencies = [r.latency_ms for r in evaluated if r.latency_ms is not None]
         stats = latency_stats(latencies)
-        available_tokens = [
-            r.candidate_tokens for r in evaluated if r.candidate_tokens is not None
-        ]
+        available_tokens = [r.candidate_tokens for r in evaluated if r.candidate_tokens is not None]
         return Aggregate(
             cases_total=len(results),
             cases_localizable=len(evaluated) + len(failed),

@@ -185,9 +185,7 @@ def _resolve_revision(
         return retrieval.revision
     if selection.items:
         return selection.items[0].revision
-    raise ManifestError(
-        "revision is required when there is no retrieval result and no items"
-    )
+    raise ManifestError("revision is required when there is no retrieval result and no items")
 
 
 def build_manifest(

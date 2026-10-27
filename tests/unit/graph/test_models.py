@@ -20,23 +20,35 @@ REV = "a" * 40
 def test_node_rejects_short_revision() -> None:
     with pytest.raises(ValidationError, match="full 40-char git SHA"):
         Node(
-            entity_id="x", kind="File", repo="r", revision="abc",
-            properties={"path": "a.py"}, ingested_at="t",
+            entity_id="x",
+            kind="File",
+            repo="r",
+            revision="abc",
+            properties={"path": "a.py"},
+            ingested_at="t",
         )
 
 
 def test_inferred_edge_requires_confidence() -> None:
     with pytest.raises(ValidationError, match="confidence"):
         Edge(
-            edge_type="CALLS", source_id="s", target_id="t",
-            provenance=Provenance.INFERRED, source="name-heuristic", revision=REV,
+            edge_type="CALLS",
+            source_id="s",
+            target_id="t",
+            provenance=Provenance.INFERRED,
+            source="name-heuristic",
+            revision=REV,
         )
 
 
 def test_observed_edge_without_confidence_is_valid() -> None:
     edge = Edge(
-        edge_type="CALLS", source_id="s", target_id="t",
-        provenance=Provenance.OBSERVED, source="name-resolution", revision=REV,
+        edge_type="CALLS",
+        source_id="s",
+        target_id="t",
+        provenance=Provenance.OBSERVED,
+        source="name-resolution",
+        revision=REV,
     )
     assert edge.confidence is None
 

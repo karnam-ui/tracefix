@@ -221,9 +221,7 @@ def validate_case(worktree: Path, row: dict) -> CaseRecord:
     test_files = sorted({tid.split("::", 1)[0] for tid in record.fail_to_pass_tests})
     created_by_test_patch = set(DIFF_FILE_RE.findall(row.get("test_patch", "")))
     missing = [
-        f
-        for f in test_files
-        if not (worktree / f).exists() and f not in created_by_test_patch
+        f for f in test_files if not (worktree / f).exists() and f not in created_by_test_patch
     ]
     record.validation["fail_to_pass_files"] = test_files
     record.validation["missing_test_files"] = missing

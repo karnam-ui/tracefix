@@ -63,17 +63,11 @@ class CaseRecord(BaseModel):
     @model_validator(mode="after")
     def _check_consistency(self) -> CaseRecord:
         if not self.localizable and not self.excluded_reason:
-            raise ValueError(
-                f"{self.case_id}: non-localizable case must carry excluded_reason"
-            )
+            raise ValueError(f"{self.case_id}: non-localizable case must carry excluded_reason")
         if self.localizable and not self.ground_truth_files:
-            raise ValueError(
-                f"{self.case_id}: localizable case must list ground_truth_files"
-            )
+            raise ValueError(f"{self.case_id}: localizable case must list ground_truth_files")
         if self.localizable and not self.ground_truth_functions:
-            raise ValueError(
-                f"{self.case_id}: localizable case must list ground_truth_functions"
-            )
+            raise ValueError(f"{self.case_id}: localizable case must list ground_truth_functions")
         return self
 
     @property

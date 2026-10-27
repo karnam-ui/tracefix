@@ -41,8 +41,12 @@ def valid_snapshot() -> tuple[list[Node], list[Edge]]:
         _node(f"{repo}#File:core.py", "File", path="core.py", imports_declared=[]),
         _node(f"{repo}#Module:core", "Module", qualified_name="core", path="core.py"),
         _node(
-            f"{repo}#Function:core.add", "Function",
-            qualified_name="core.add", path="core.py", start_line=1, end_line=2,
+            f"{repo}#Function:core.add",
+            "Function",
+            qualified_name="core.add",
+            path="core.py",
+            start_line=1,
+            end_line=2,
         ),
     ]
     edges = [

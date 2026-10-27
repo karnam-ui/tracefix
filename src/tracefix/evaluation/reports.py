@@ -87,9 +87,7 @@ def generate_markdown_report(result: MultiArmExperimentResult) -> str:
     for agg in result.arms.values():
         tokens = f"{agg.mean_context_tokens:.0f}" if agg.mean_context_tokens else "N/A"
         ret_ms = (
-            f"{agg.mean_retrieval_latency_ms:.1f} ms"
-            if agg.mean_retrieval_latency_ms
-            else "N/A"
+            f"{agg.mean_retrieval_latency_ms:.1f} ms" if agg.mean_retrieval_latency_ms else "N/A"
         )
         rep_s = (
             f"{agg.mean_repair_duration_seconds:.2f} s"
@@ -131,7 +129,6 @@ def generate_markdown_report(result: MultiArmExperimentResult) -> str:
                 "all future commits and same-case fix revisions are excluded "
                 "prior to query execution."
             ),
-
             (
                 "- **Sandbox Isolation:** Patches executed inside isolated environments "
                 "with sanitized credentials."

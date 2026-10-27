@@ -67,10 +67,7 @@ def is_function_relevant(item: RankedItem, gt_functions: list[str]) -> bool:
     symbol = item.target.symbol
     if not symbol:
         return False
-    return any(
-        symbol == qn or symbol == qn.rsplit(".", 1)[-1]
-        for qn in gt_functions
-    )
+    return any(symbol == qn or symbol == qn.rsplit(".", 1)[-1] for qn in gt_functions)
 
 
 def is_file_relevant(item: RankedItem, gt_files: list[str]) -> bool:
@@ -80,8 +77,7 @@ def is_file_relevant(item: RankedItem, gt_files: list[str]) -> bool:
     # Normalize paths
     f_clean = f.removeprefix("requests/").removeprefix("/")
     return any(
-        f == gf or f_clean == gf.removeprefix("requests/").removeprefix("/")
-        for gf in gt_files
+        f == gf or f_clean == gf.removeprefix("requests/").removeprefix("/") for gf in gt_files
     )
 
 
@@ -205,12 +201,10 @@ def run_pilot() -> dict[str, Any]:
             file_hit = {str(k): hit_at_k(file_ranks, k) for k in k_values}
 
             fn_recall = {
-                str(k): recall_at_k(fn_ranks, k, len(case.ground_truth_functions))
-                for k in k_values
+                str(k): recall_at_k(fn_ranks, k, len(case.ground_truth_functions)) for k in k_values
             }
             file_recall = {
-                str(k): recall_at_k(file_ranks, k, len(case.ground_truth_files))
-                for k in k_values
+                str(k): recall_at_k(file_ranks, k, len(case.ground_truth_files)) for k in k_values
             }
 
             # Run context selection under 4k budget
@@ -368,14 +362,14 @@ def generate_markdown_report(report: dict[str, Any]) -> str:
 
     for _arm_id, agg in report["aggregates"].items():
         h5 = agg["function_hit_at_k"]["5"]
-        fn_h5 = f"{h5['hits']}/{h5['denominator']} ({h5['rate']*100:.1f}%)"
+        fn_h5 = f"{h5['hits']}/{h5['denominator']} ({h5['rate'] * 100:.1f}%)"
         h10 = agg["function_hit_at_k"]["10"]
-        fn_h10 = f"{h10['hits']}/{h10['denominator']} ({h10['rate']*100:.1f}%)"
+        fn_h10 = f"{h10['hits']}/{h10['denominator']} ({h10['rate'] * 100:.1f}%)"
         h20 = agg["function_hit_at_k"]["20"]
-        fn_h20 = f"{h20['hits']}/{h20['denominator']} ({h20['rate']*100:.1f}%)"
+        fn_h20 = f"{h20['hits']}/{h20['denominator']} ({h20['rate'] * 100:.1f}%)"
         f10 = agg["file_hit_at_k"]["10"]
-        file_h10 = f"{f10['hits']}/{f10['denominator']} ({f10['rate']*100:.1f}%)"
-        rec10 = f"{agg['function_recall_micro']['10']*100:.1f}%"
+        file_h10 = f"{f10['hits']}/{f10['denominator']} ({f10['rate'] * 100:.1f}%)"
+        rec10 = f"{agg['function_recall_micro']['10'] * 100:.1f}%"
         mrr = f"{agg['mrr']:.3f}"
         lat = f"{agg['latency']['mean_ms']} ms"
         mean_tok = agg["context_budget"]["mean_tokens_used"]
@@ -387,16 +381,18 @@ def generate_markdown_report(report: dict[str, Any]) -> str:
             f"{rec10} | {mrr} | {lat} | {tok} |"
         )
 
-    lines.extend([
-        "",
-        "---",
-        "",
-        "## 2. Per-Case Comparative Results",
-        "",
-        "| Case ID | Revision | Ground Truth Function | Arm A First Rank | "
-        "Arm B First Rank | Arm C First Rank |",
-        "|---|---|---|---|---|---|",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 2. Per-Case Comparative Results",
+            "",
+            "| Case ID | Revision | Ground Truth Function | Arm A First Rank | "
+            "Arm B First Rank | Arm C First Rank |",
+            "|---|---|---|---|---|---|",
+        ]
+    )
 
     cases_a = report["case_details"]["arm_a_lexical"]
     cases_b = report["case_details"]["arm_b_graph_guided"]
@@ -412,30 +408,32 @@ def generate_markdown_report(report: dict[str, Any]) -> str:
 
         lines.append(f"| `{cid}` | `{rev_short}` | `{gt_fn}` | {r_a} | {r_b} | {r_c} |")
 
-    lines.extend([
-        "",
-        "---",
-        "",
-        "## 3. Findings & Experimental Observations",
-        "",
-        "1. **Execution Reality:** All 3 arms executed live against "
-        "real historical base revisions. Arm B and Arm C actively queried "
-        "live FalkorDB graph instances populated from repository AST and Git history.",
-        "2. **Lexical Baseline Performance:** On this 5-case subset, "
-        "Arm A (Lexical BM25) and Arm B / C locate relevant functions with "
-        "high precision for cases with distinct terminology (`requests-1142`, `requests-1766`).",
-        "3. **Graph Expansion Impact:** Arm B bounded graph expansion "
-        "retrieved related caller/callee and class structures without exceeding "
-        "context limits. For cases where terminology is generic (`requests-1724`), "
-        "graph exploration brings relevant structural neighbors into consideration.",
-        "4. **Fusion Behavior:** Arm C (Reciprocal Rank Fusion) "
-        "successfully synthesizes lexical and graph evidence with zero duplicate "
-        "entities and smooth reciprocal score aggregation.",
-        "5. **Statistical Caution:** With N=5, this pilot is an "
-        "outcome-independent infrastructure and protocol validation, not a "
-        "statistically conclusive proof of superiority. Ground truth remains "
-        "provisional as per Q-B7.",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 3. Findings & Experimental Observations",
+            "",
+            "1. **Execution Reality:** All 3 arms executed live against "
+            "real historical base revisions. Arm B and Arm C actively queried "
+            "live FalkorDB graph instances populated from repository AST and Git history.",
+            "2. **Lexical Baseline Performance:** On this 5-case subset, "
+            "Arm A (Lexical BM25) and Arm B / C locate relevant functions with high "
+            "precision for cases with distinct terminology (`requests-1142`, `requests-1766`).",
+            "3. **Graph Expansion Impact:** Arm B bounded graph expansion "
+            "retrieved related caller/callee and class structures without exceeding "
+            "context limits. For cases where terminology is generic (`requests-1724`), "
+            "graph exploration brings relevant structural neighbors into consideration.",
+            "4. **Fusion Behavior:** Arm C (Reciprocal Rank Fusion) "
+            "successfully synthesizes lexical and graph evidence with zero duplicate "
+            "entities and smooth reciprocal score aggregation.",
+            "5. **Statistical Caution:** With N=5, this pilot is an "
+            "outcome-independent infrastructure and protocol validation, not a "
+            "statistically conclusive proof of superiority. Ground truth remains "
+            "provisional as per Q-B7.",
+        ]
+    )
 
     return "\n".join(lines)
 

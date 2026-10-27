@@ -1,16 +1,24 @@
 import React from 'react'
-import { AlertTriangle, CheckCircle2, FileCode, ShieldCheck, XCircle } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  FileCode,
+  ShieldAlert,
+  ShieldCheck,
+  XCircle,
+} from 'lucide-react'
 import type { VerificationSummary } from '../types'
 
 interface PatchVerificationPanelProps {
-  proposedPatch?: string
+  proposedPatch?: string | null
   patchSafety?: {
     is_valid?: boolean
     errors?: string[]
     prohibited_files?: string[]
     warnings?: string[]
   }
-  verification?: VerificationSummary
+  verification?: VerificationSummary | null
 }
 
 export const PatchVerificationPanel: React.FC<PatchVerificationPanelProps> = ({
@@ -20,12 +28,12 @@ export const PatchVerificationPanel: React.FC<PatchVerificationPanelProps> = ({
 }) => {
   if (!proposedPatch && !verification) {
     return (
-      <div className="panel-card">
+      <div className="panel-card" style={{ marginBottom: 16 }}>
         <div className="panel-header">
-          <span className="panel-title">Patch Proposal & Sandbox Verification</span>
+          <span className="panel-title">Patch Proposal &amp; Sandbox Verification</span>
         </div>
         <div className="panel-body empty-placeholder">
-          No repair executed yet. Enable &quot;Run Repair State Machine&quot; to generate and verify candidate fixes.
+          No repair executed. Select Mode D (&quot;Trace &amp; Fix&quot;) to generate a candidate diff and execute isolated tests.
         </div>
       </div>
     )
@@ -52,22 +60,24 @@ export const PatchVerificationPanel: React.FC<PatchVerificationPanelProps> = ({
     })
   }
 
-  const isVerified = verification?.status === 'VERIFIED'
+  const status = verification?.status || 'UNKNOWN'
+  const isVerified = status === 'VERIFIED'
+  const isUnavailable = status === 'UNAVAILABLE'
+  const isFailed = status === 'TEST_FAILED' || status === 'FAILED'
+  const isTimeout = status === 'TIMEOUT'
 
   return (
-    <div className="panel-card">
+    <div className="panel-card" style={{ marginBottom: 16 }}>
       <div className="panel-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="panel-title">
-            <FileCode size={14} />
-            Repair Proposal & Verification
-          </span>
+          <FileCode size={14} color="var(--accent-primary)" />
+          <span className="panel-title">Repair Proposal &amp; Verification</span>
           {patchSafety && patchSafety.is_valid !== undefined && (
             <span
               className={`badge ${patchSafety.is_valid ? 'badge-green' : 'badge-red'}`}
-              style={{ display: 'inline-flex', gap: 3, alignItems: 'center' }}
+              style={{ display: 'inline-flex', gap: 3, alignItems: 'center', fontSize: 10 }}
             >
-              <ShieldCheck size={10} />
+              {patchSafety.is_valid ? <ShieldCheck size={10} /> : <ShieldAlert size={10} />}
               {patchSafety.is_valid ? 'AST SAFETY: PASS' : 'AST SAFETY: VIOLATION'}
             </span>
           )}
@@ -75,11 +85,12 @@ export const PatchVerificationPanel: React.FC<PatchVerificationPanelProps> = ({
 
         {verification && (
           <span
-            className={`status-pill ${isVerified ? 'online' : 'offline'}`}
+            className={`badge ${
+              isVerified ? 'badge-green' : isUnavailable ? 'badge-yellow' : 'badge-red'
+            } mono`}
             style={{ fontSize: 11 }}
           >
-            <span className="status-dot" />
-            {verification.status} (exit {verification.exit_code})
+            {status} {verification.exit_code !== 0 && `(exit ${verification.exit_code})`}
           </span>
         )}
       </div>
@@ -92,49 +103,69 @@ export const PatchVerificationPanel: React.FC<PatchVerificationPanelProps> = ({
               padding: '8px 12px',
               borderRadius: 'var(--radius-sm)',
               marginBottom: 12,
-              backgroundColor: isVerified ? 'var(--status-success-bg)' : 'var(--status-danger-bg)',
-              border: `1px solid ${isVerified ? 'rgba(46, 160, 67, 0.4)' : 'rgba(248, 81, 73, 0.4)'}`,
+              backgroundColor: isVerified
+                ? 'var(--status-success-bg)'
+                : isUnavailable
+                ? 'var(--status-warning-bg)'
+                : 'var(--status-danger-bg)',
+              border: `1px solid ${
+                isVerified
+                  ? 'rgba(46, 160, 67, 0.4)'
+                  : isUnavailable
+                  ? 'rgba(210, 153, 34, 0.4)'
+                  : 'rgba(248, 81, 73, 0.4)'
+              }`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              fontSize: 12,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {isVerified ? (
-                <CheckCircle2 size={16} color="var(--status-success-text)" />
-              ) : (
-                <XCircle size={16} color="var(--status-danger-text)" />
-              )}
-              <span style={{ fontWeight: 600, fontSize: 12, color: isVerified ? 'var(--status-success-text)' : 'var(--status-danger-text)' }}>
-                {isVerified
-                  ? 'Candidate Patch Successfully Verified in Isolated Sandbox'
-                  : 'Sandbox Verification Failed or Incomplete'}
-              </span>
+              {isVerified && <CheckCircle2 size={16} color="var(--status-success-text)" />}
+              {isUnavailable && <AlertCircle size={16} color="var(--status-warning-text)" />}
+              {isFailed && <XCircle size={16} color="var(--status-danger-text)" />}
+              {isTimeout && <Clock size={16} color="var(--status-warning-text)" />}
+              <div>
+                <strong>
+                  {isVerified
+                    ? 'Patch Verified in Isolated Sandbox'
+                    : isUnavailable
+                    ? 'Repair Generation Unavailable'
+                    : isTimeout
+                    ? 'Test Execution Timed Out'
+                    : 'Sandbox Tests Failed'}
+                </strong>
+                {verification.details && (
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    {verification.details}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-              Duration: {verification.duration_seconds.toFixed(2)}s | Passed: {verification.passed_tests.length} | Failed: {verification.failed_tests.length}
-            </span>
+            {verification.duration_seconds > 0 && (
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                {verification.duration_seconds.toFixed(2)}s runtime
+              </span>
+            )}
           </div>
         )}
 
-        {/* Safety Warnings if any */}
+        {/* Safety Check Violations */}
         {patchSafety && patchSafety.errors && patchSafety.errors.length > 0 && (
           <div
             style={{
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-sm)',
-              marginBottom: 10,
+              marginBottom: 12,
+              padding: '8px 10px',
               backgroundColor: 'var(--status-danger-bg)',
-              border: '1px solid rgba(248, 81, 73, 0.4)',
-              fontSize: 11,
+              borderRadius: 'var(--radius-sm)',
               color: 'var(--status-danger-text)',
+              fontSize: 11,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-              <AlertTriangle size={13} /> Safety Violations Detected:
-            </div>
-            <ul style={{ paddingLeft: 18, marginTop: 4 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Safety Check Violations:</div>
+            <ul style={{ margin: 0, paddingLeft: 16 }}>
               {patchSafety.errors.map((err, i) => (
                 <li key={i}>{err}</li>
               ))}
@@ -142,47 +173,22 @@ export const PatchVerificationPanel: React.FC<PatchVerificationPanelProps> = ({
           </div>
         )}
 
-        {/* Unified Diff Box */}
+        {/* Unified Diff View */}
         {proposedPatch ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
-              Candidate Unified Diff:
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>
+              Proposed Unified Diff (Review Before Applying to Working Tree):
             </div>
-            <div className="diff-container">{renderDiffLines(proposedPatch)}</div>
+            <div className="diff-view">{renderDiffLines(proposedPatch)}</div>
           </div>
-        ) : (
-          <div className="empty-placeholder">No patch generated.</div>
-        )}
-
-        {/* Executed Tests Box */}
-        {verification && verification.passed_tests.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Verified Test Executions (fail_to_pass target suite):
-            </span>
-            <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {verification.passed_tests.map((t, idx) => (
-                <div
-                  key={idx}
-                  className="mono"
-                  style={{
-                    fontSize: 11,
-                    padding: '3px 8px',
-                    borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'var(--bg-primary)',
-                    border: '1px solid var(--border-default)',
-                    color: 'var(--status-success-text)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <CheckCircle2 size={11} /> {t}
-                </div>
-              ))}
-            </div>
+        ) : isUnavailable ? (
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: 12, backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+            To generate repairs with LLM models, configure an API key in your local environment:
+            <pre className="mono" style={{ margin: '8px 0 0 0', padding: 8, backgroundColor: 'var(--bg-primary)', borderRadius: 4, fontSize: 11 }}>
+              export ANTHROPIC_API_KEY=&quot;your-key&quot; # or OPENROUTER_API_KEY
+            </pre>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )

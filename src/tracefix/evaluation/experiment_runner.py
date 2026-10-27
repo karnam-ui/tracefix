@@ -297,12 +297,10 @@ class MultiArmExperimentRunner:
                     "provenance": item.provenance.value,
                     "source": item.source,
                     "content": (
-                        f"# Evidence {item.evidence_id} in "
-                        f"{item.target.file}:{item.target.symbol}"
+                        f"# Evidence {item.evidence_id} in {item.target.file}:{item.target.symbol}"
                     ),
                 }
             )
-
 
         # 3. Memory integration (if enabled)
         prior_memories = []

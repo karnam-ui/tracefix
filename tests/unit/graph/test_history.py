@@ -35,9 +35,7 @@ def test_history_nodes_and_edges(mini_repo: Path, mini_repo_url: str) -> None:
     assert all(e.provenance is Provenance.OBSERVED for e in authored)
 
     modified = [e for e in result.edges if e.edge_type == "MODIFIED_IN"]
-    core_files = {
-        e.source_id for e in modified if e.source_id.endswith("#File:calc/core.py")
-    }
+    core_files = {e.source_id for e in modified if e.source_id.endswith("#File:calc/core.py")}
     assert core_files, "core.py should be MODIFIED_IN at least one commit"
 
     owned = [e for e in result.edges if e.edge_type == "OWNED_BY"]

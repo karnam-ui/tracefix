@@ -2,13 +2,16 @@
 
 import type {
   CaseSummary,
+  ConnectRepositoryRequest,
   EvaluationReportSummary,
   GraphSummary,
   HealthResponse,
   IncidentMemoryItem,
+  IngestProgressResponse,
   InvestigateRequest,
   InvestigateResponse,
   NeighborhoodResponse,
+  RepositorySummary,
 } from '../types'
 
 const BASE_URL = import.meta.env.VITE_API_URL || ''
@@ -34,6 +37,54 @@ export const api = {
     const res = await fetch(`${BASE_URL}/api/health`)
     return handleResponse<HealthResponse>(res)
   },
+
+  // -------------------------------------------------------------------------
+  // Repositories
+  // -------------------------------------------------------------------------
+
+  async getRepositories(): Promise<RepositorySummary[]> {
+    const res = await fetch(`${BASE_URL}/api/repos`)
+    return handleResponse<RepositorySummary[]>(res)
+  },
+
+  async getActiveRepository(): Promise<RepositorySummary | null> {
+    const res = await fetch(`${BASE_URL}/api/repos/active`)
+    return handleResponse<RepositorySummary | null>(res)
+  },
+
+  async connectRepository(req: ConnectRepositoryRequest): Promise<RepositorySummary> {
+    const res = await fetch(`${BASE_URL}/api/repos/connect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    })
+    return handleResponse<RepositorySummary>(res)
+  },
+
+  async selectRepository(repoId: string): Promise<RepositorySummary> {
+    const res = await fetch(`${BASE_URL}/api/repos/select?repo_id=${encodeURIComponent(repoId)}`, {
+      method: 'POST',
+    })
+    return handleResponse<RepositorySummary>(res)
+  },
+
+  async disconnectRepository(repoId: string): Promise<{ status: string; disconnected_repo_id: string }> {
+    const res = await fetch(`${BASE_URL}/api/repos/${encodeURIComponent(repoId)}`, {
+      method: 'DELETE',
+    })
+    return handleResponse<{ status: string; disconnected_repo_id: string }>(res)
+  },
+
+  async ingestRepository(repoId: string): Promise<IngestProgressResponse> {
+    const res = await fetch(`${BASE_URL}/api/repos/${encodeURIComponent(repoId)}/ingest`, {
+      method: 'POST',
+    })
+    return handleResponse<IngestProgressResponse>(res)
+  },
+
+  // -------------------------------------------------------------------------
+  // Benchmark Cases & Graphs
+  // -------------------------------------------------------------------------
 
   async getCases(): Promise<CaseSummary[]> {
     const res = await fetch(`${BASE_URL}/api/cases`)

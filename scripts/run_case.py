@@ -148,10 +148,8 @@ def main() -> int:
     )
     retrieval_res = strategy.retrieve(query)
     print(
-        f"\n[Retrieval] Found {len(retrieval_res.items)} items in "
-        f"{retrieval_res.elapsed_ms:.1f}ms"
+        f"\n[Retrieval] Found {len(retrieval_res.items)} items in {retrieval_res.elapsed_ms:.1f}ms"
     )
-
 
     # 3. Context manifest packing & memory integration
     memory_repo = IncidentMemoryRepository()
@@ -223,7 +221,6 @@ def main() -> int:
     else:
         provider = HttpModelProvider()  # reads ANTHROPIC_API_KEY
         verifier = SandboxVerifierAdapter()  # runs in disposable git worktree
-
 
     validator = PatchValidator()
     orchestrator = RepairOrchestrator(

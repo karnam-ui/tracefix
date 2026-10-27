@@ -219,8 +219,7 @@ class ContextSelection(BaseModel):
     def _check_bounds(self) -> ContextSelection:
         if self.totals.tokens > self.budget.token_limit:
             raise ValueError(
-                f"totals.tokens {self.totals.tokens} exceeds token_limit "
-                f"{self.budget.token_limit}"
+                f"totals.tokens {self.totals.tokens} exceeds token_limit {self.budget.token_limit}"
             )
         if self.totals.item_count != len(self.items):
             raise ValueError("totals.item_count must equal len(items)")
@@ -339,9 +338,7 @@ class ContextSelector:
         source_counts[cand.item.source] = source_counts.get(cand.item.source, 0) + 1
 
     @staticmethod
-    def _selected(
-        cand: ContextCandidate, cost: int, reason: SelectionReason
-    ) -> SelectedItem:
+    def _selected(cand: ContextCandidate, cost: int, reason: SelectionReason) -> SelectedItem:
         item = cand.item
         return SelectedItem(
             evidence_id=item.evidence_id,

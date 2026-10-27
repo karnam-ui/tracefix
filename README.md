@@ -44,25 +44,80 @@ frontend/                      # React / TypeScript investigation workspace
 
 ---
 
-## Interactive Investigation Workspace & UI
+## Interactive 3-Panel Developer Workspace
 
-TraceFix includes a technical React/TypeScript developer investigation workspace:
-- **Investigation Lifecycle:** Real-time tracking from bug report acceptance through retrieval, context budgeting, AST safety validation, and sandbox verification.
-- **Evidence Explorer:** Filterable ranked evidence items with ground-truth function/file match indicators.
-- **Context Budget Accounting:** Accurate token tracking against 2k/4k/8k limits with explicit candidate exclusion reasons.
-- **Unified Diff & Verification:** Syntax-highlighted patch diffs, path traversal bounds checking, and test execution outcomes.
-- **Part B Incident Memory:** Historical incident browser with strict chronological leakage isolation.
-- **FalkorDB Graph Explorer:** Interactive SVG graph visualization of historical base-revision property graphs.
+TraceFix features a modern, cohesive 3-panel developer workspace in React + TypeScript + Vite:
+- **Panel A — Investigation & Repositories:** Repository switching, local Git directory connection, controlled demo repository (`requests`), 1-click sample presets (`requests-1142`, `requests-1376`, `requests-1537`), 4 investigation modes (Trace, Find, Snippets, Trace & Fix), and context budget controls (2k/4k/8k).
+- **Panel B — Dependency Graph:** Interactive SVG dependency graph of the active neighborhood with pan/zoom/fit controls, glowing teal highlight rings for primary evidence nodes, click-to-inspect node drawer, and truthful fallback status badges.
+- **Panel C — Findings, Budget & Verification:** Ranked grounded evidence list with line ranges and AST provenance, token budget accounting meter (limit, tokens selected, utilization %, dropped items count), live baseline lexical comparison showing exact token savings vs BM25, expandable candidate patch diffs, and sandbox verification statuses.
+- **Diagnostics & Benchmarks Modal:** Engineering diagnostics housing Part B Incident Memory records, SWE-bench candidate benchmarks, and engine health checks without cluttering the daily investigation workspace.
 
-### Quick Start (Single Unified Server)
+---
+
+## Model Context Protocol (MCP) Server for Coding Agents
+
+TraceFix includes an official local STDIO MCP server (`tracefix-mcp`) allowing compatible coding agents (Claude Desktop, Cursor, Antigravity) to access repository intelligence directly without a browser dashboard:
+
+### Exposed Read-Only Tools
+- `list_repositories()`: Lists connected repositories, default branches, current revisions, and graph readiness.
+- `find_relevant_code(repository_id, query, limit=10)`: Finds code functions, classes, and symbols relevant to a query with line ranges and relevance scores.
+- `trace_dependencies(repository_id, symbol_or_path, max_hops=2)`: Traces caller, callee, import, definition, and test relationships around a symbol or file.
+- `build_investigation_context(repository_id, bug_report, token_budget=4000)`: Assembles an optimal, budget-constrained context payload with exact code locations and baseline savings.
+
+### Quick MCP Configuration
+
+**For Claude Desktop (`claude_desktop_config.json`):**
+```json
+{
+  "mcpServers": {
+    "tracefix": {
+      "command": "uv",
+      "args": ["run", "tracefix-mcp"],
+      "cwd": "/path/to/TraceFix"
+    }
+  }
+}
+```
+
+**For Cursor IDE (`.cursor/mcp.json`):**
+```json
+{
+  "mcpServers": {
+    "tracefix": {
+      "command": "tracefix-mcp"
+    }
+  }
+}
+```
+
+---
+
+## Quick Start (Single Unified Server)
 ```sh
-# Build the frontend bundle
+# 1. (Optional) Start FalkorDB graph database in Docker:
+docker run -d -p 6379:6379 --name falkordb falkordb/falkordb:latest
+# (Note: TraceFix operates with full functionality offline using in-memory snapshot BFS if FalkorDB is not running)
+
+# 2. Build the frontend bundle:
 npm --prefix frontend run build
 
-# Start the unified FastAPI server (serves API and UI on port 8000)
+# 3. Start the unified FastAPI server (serves API and UI on port 8000):
 uv run uvicorn tracefix.api.app:app --host 0.0.0.0 --port 8000
 ```
-Open [http://localhost:8000](http://localhost:8000) in your browser. For frontend development mode with hot-reloading, run `npm --prefix frontend run dev` (proxies to backend at port 8000). See `docs/ui_integration.md` for full API details.
+Open [http://localhost:8000](http://localhost:8000) in your browser.
+
+### Local Developer Workflow
+1. **Connect Repository:** In the top header bar, select an already-indexed repository or click **"Connect Local Repo"** and enter the path to any local Git repository on your machine.
+2. **Ingest Codebase:** Click **"Ingest & Build Graph"** to parse Python AST structures, extract callers/callees, imports, and git history into a revision property graph snapshot.
+3. **Submit Bug Report:** Enter issue statements, stack traces, or reproduction steps.
+4. **Choose Mode:**
+   - **Mode A (Trace):** Graph-guided structural relationship traversal starting from lexical seeds.
+   - **Mode B (Find):** Direct lexical BM25 code search across functions and symbols.
+   - **Mode C (Snippets):** Bounded code fragments formatted within exact token limits.
+   - **Mode D (Trace & Fix):** Full investigation, prompt assembly, candidate diff generation (if `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` is configured), and test execution inside a disposable `git worktree` sandbox.
+5. **Inspect Diagnostics:** Inspect context token utilization, honest baseline comparisons, and FalkorDB graph neighborhoods.
+
+For frontend development mode with hot-reloading, run `npm --prefix frontend run dev` (proxies to backend at port 8000). See `docs/ui_integration.md` for full API details.
 
 ---
 

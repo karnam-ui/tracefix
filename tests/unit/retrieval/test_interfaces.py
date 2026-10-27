@@ -44,7 +44,10 @@ def _query(k: int = 5) -> RetrievalQuery:
 def test_query_bounds_validated() -> None:
     with pytest.raises(ValidationError):
         RetrievalQuery(
-            case_id="c", text="x", revision=REV, k=0,
+            case_id="c",
+            text="x",
+            revision=REV,
+            k=0,
             limits=RetrievalLimits(max_items=10, max_hops=0, timeout_ms=1000),
         )
     with pytest.raises(ValidationError):
@@ -54,16 +57,17 @@ def test_query_bounds_validated() -> None:
 def test_dense_1_based_ranks_required() -> None:
     with pytest.raises(ValidationError, match="dense"):
         RetrievalResult(
-            items=[_item(2)], complete=True, strategy="lexical",
-            revision=REV, elapsed_ms=1.0,
+            items=[_item(2)],
+            complete=True,
+            strategy="lexical",
+            revision=REV,
+            elapsed_ms=1.0,
         )
 
 
 def test_incomplete_result_requires_partial_reason() -> None:
     with pytest.raises(ValidationError, match="partial_reason"):
-        RetrievalResult(
-            items=[], complete=False, strategy="lexical", revision=REV, elapsed_ms=1.0
-        )
+        RetrievalResult(items=[], complete=False, strategy="lexical", revision=REV, elapsed_ms=1.0)
 
 
 def test_failure_result_cannot_carry_items() -> None:

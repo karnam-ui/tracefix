@@ -61,9 +61,7 @@ def test_contains_and_import_edges(snapshot) -> None:
 
 def test_call_resolution_provenance(snapshot) -> None:
     calls = {
-        (e.source_id, e.target_id, e.provenance)
-        for e in snapshot.edges
-        if e.edge_type == "CALLS"
+        (e.source_id, e.target_id, e.provenance) for e in snapshot.edges if e.edge_type == "CALLS"
     }
     accumulate = _qid("", "Function", "calc.core.accumulate")
     add = _qid("", "Function", "calc.core.add")
@@ -76,7 +74,8 @@ def test_call_resolution_provenance(snapshot) -> None:
 
 def test_external_import_creates_no_edge(snapshot) -> None:
     core_file = next(
-        n for n in snapshot.nodes.values()
+        n
+        for n in snapshot.nodes.values()
         if n.kind == "File" and n.properties["path"] == "calc/core.py"
     )
     assert "os" in core_file.properties["imports_declared"]

@@ -93,9 +93,7 @@ class HashingEmbeddingBackend:
     def _encode_one(self, text: str) -> list[float]:
         vector = [0.0] * self.dimension
         for token in _TOKEN_RE.findall(text.lower()):
-            digest = hashlib.blake2b(
-                f"{self.seed}:{token}".encode(), digest_size=8
-            ).digest()
+            digest = hashlib.blake2b(f"{self.seed}:{token}".encode(), digest_size=8).digest()
             value = int.from_bytes(digest, "big")
             index = value % self.dimension
             sign = 1.0 if (value >> 63) & 1 == 0 else -1.0

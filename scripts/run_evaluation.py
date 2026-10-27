@@ -11,7 +11,6 @@ Usage:
     python scripts/run_evaluation.py --mock --cases psf__requests-1142
 """
 
-
 from __future__ import annotations
 
 import argparse
@@ -89,7 +88,6 @@ class MockRetrievalStrategy:
         )
 
 
-
 class DynamicModelProvider:
     """Mock model provider generating valid unique diffs per case."""
 
@@ -142,7 +140,6 @@ def build_arms(
             patch_validator=PatchValidator(),
             sandbox_verifier=MockSandboxVerifier(),
         )
-
 
     # Arm A: Conventional lexical retrieval
     arm_a = ExperimentArm(

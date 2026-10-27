@@ -1,241 +1,308 @@
 import React, { useState } from 'react'
-import { Play, RotateCcw } from 'lucide-react'
-import type { CaseSummary, InvestigateRequest } from '../types'
+import {
+  Compass,
+  Layers,
+  Play,
+  RotateCcw,
+  Search,
+  Sliders,
+  Wrench,
+} from 'lucide-react'
+import type { CaseSummary, InvestigateRequest, InvestigationMode, RepositorySummary } from '../types'
 
 interface BugInvestigationFormProps {
+  activeRepository: RepositorySummary | null
   cases: CaseSummary[]
   isLoading: boolean
   onSubmit: (req: InvestigateRequest) => void
   onReset: () => void
-  currentCaseId?: string
 }
 
 export const BugInvestigationForm: React.FC<BugInvestigationFormProps> = ({
+  activeRepository,
   cases,
   isLoading,
   onSubmit,
   onReset,
-  currentCaseId,
 }) => {
-  const [selectedCaseId, setSelectedCaseId] = useState<string>(currentCaseId || 'psf__requests-1142')
-  const [strategy, setStrategy] = useState<'graph' | 'fused' | 'lexical' | 'memory'>('graph')
+  const [bugSummary, setBugSummary] = useState<string>('')
+  const [mode, setMode] = useState<InvestigationMode>('trace')
   const [budget, setBudget] = useState<number>(4000)
-  const [mockMode, setMockMode] = useState<boolean>(true)
-  const [executeRepair, setExecuteRepair] = useState<boolean>(true)
-  const [customReport, setCustomReport] = useState<string>('')
-  const [customRevision, setCustomRevision] = useState<string>('22623bd8c265b78b161542663ee980738441c307')
-  const [customRepo, setCustomRepo] = useState<string>('requests')
+  const [compareBaseline, setCompareBaseline] = useState<boolean>(false)
+  const [showBenchmarkPresets, setShowBenchmarkPresets] = useState<boolean>(false)
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('')
 
-  const handleSelectCase = (caseId: string) => {
+  const handleSelectPreset = (caseId: string) => {
     setSelectedCaseId(caseId)
-    if (caseId && caseId !== 'custom') {
-      const found = cases.find((c) => c.case_id === caseId)
-      if (found) {
-        setCustomReport(found.bug_report_preview)
-        setCustomRevision(found.revision)
-        setCustomRepo(found.repo)
-      }
+    if (!caseId) return
+    const found = cases.find((c) => c.case_id === caseId)
+    if (found) {
+      setBugSummary(found.bug_report_preview)
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (isLoading) return
+    if (isLoading || !bugSummary.trim() || !activeRepository) return
 
     const req: InvestigateRequest = {
-      case_id: selectedCaseId === 'custom' ? undefined : selectedCaseId,
-      repo: customRepo,
-      revision: customRevision,
-      bug_report: customReport,
-      strategy,
+      case_id: selectedCaseId || undefined,
+      repo_id: activeRepository.repo_id,
+      repo: activeRepository.name,
+      revision: activeRepository.working_revision,
+      bug_report: bugSummary.trim(),
+      mode,
+      strategy: mode === 'find' ? 'lexical' : 'graph',
       budget,
-      mock: mockMode,
-      execute_repair: executeRepair,
+      mock: false,
+      execute_repair: mode === 'repair',
+      compare_baseline: compareBaseline,
     }
     onSubmit(req)
   }
 
-  const selectedCase = cases.find((c) => c.case_id === selectedCaseId)
+  const getActionLabel = () => {
+    switch (mode) {
+      case 'trace':
+        return 'Trace Code Relationships'
+      case 'find':
+        return 'Find Relevant Code & Symbols'
+      case 'snippets':
+        return 'Retrieve Bounded Snippets'
+      case 'repair':
+        return 'Trace & Propose Verified Fix'
+    }
+  }
+
+  const getActionIcon = () => {
+    switch (mode) {
+      case 'trace':
+        return <Compass size={14} />
+      case 'find':
+        return <Search size={14} />
+      case 'snippets':
+        return <Layers size={14} />
+      case 'repair':
+        return <Wrench size={14} />
+    }
+  }
+
+  const isRepoReady = Boolean(activeRepository)
 
   return (
-    <div className="panel-card">
+    <div className="panel-card" style={{ marginBottom: 16 }}>
       <div className="panel-header">
-        <span className="panel-title">Bug Investigation Configuration</span>
-        {selectedCase && (
-          <span className="badge badge-blue mono">
-            {selectedCase.localizable ? 'LOCALIZABLE' : 'NON-LOCALIZABLE'}
-          </span>
-        )}
+        <span className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Search size={14} color="var(--accent-primary)" />
+          Bug Investigation & Retrieval
+        </span>
+        <button
+          type="button"
+          className="btn btn-sm btn-secondary"
+          onClick={() => setShowBenchmarkPresets(!showBenchmarkPresets)}
+          title="Toggle frozen benchmark test cases (SWE-bench / A6c pilot)"
+        >
+          {showBenchmarkPresets ? 'Hide Benchmarks' : 'Load Benchmark Case...'}
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="panel-body">
-        {/* Preset Case Picker */}
-        <div className="form-group">
-          <label className="form-label" htmlFor="case-select">
-            Target Bug Case (Frozen Benchmark Pool)
-          </label>
-          <select
-            id="case-select"
-            className="form-select mono"
-            value={selectedCaseId}
-            onChange={(e) => handleSelectCase(e.target.value)}
-            disabled={isLoading}
+        {/* Optional Benchmark Picker for research diagnostics */}
+        {showBenchmarkPresets && (
+          <div
+            style={{
+              padding: 10,
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-default)',
+              marginBottom: 14,
+            }}
           >
-            <optgroup label="Frozen Pilot Subset (A6c)">
-              <option value="psf__requests-1142">psf__requests-1142 (22623bd8)</option>
-              <option value="psf__requests-1376">psf__requests-1376 (2aabb71d)</option>
-              <option value="psf__requests-1537">psf__requests-1537 (d8268fb7)</option>
-              <option value="psf__requests-1724">psf__requests-1724 (1ba83c47)</option>
-              <option value="psf__requests-1766">psf__requests-1766 (84773555)</option>
-            </optgroup>
-            {cases.length > 5 && (
-              <optgroup label="Full Benchmark Pool (44 Cases)">
-                {cases
-                  .filter(
-                    (c) =>
-                      ![
-                        'psf__requests-1142',
-                        'psf__requests-1376',
-                        'psf__requests-1537',
-                        'psf__requests-1724',
-                        'psf__requests-1766',
-                      ].includes(c.case_id)
-                  )
-                  .map((c) => (
-                    <option key={c.case_id} value={c.case_id}>
-                      {c.case_id} ({c.short_sha})
-                    </option>
-                  ))}
+            <label className="form-label" htmlFor="benchmark-select" style={{ fontSize: 11 }}>
+              Select Frozen Evaluation Bug Case (Optional Diagnostic)
+            </label>
+            <select
+              id="benchmark-select"
+              className="form-select mono"
+              style={{ fontSize: 11 }}
+              value={selectedCaseId}
+              onChange={(e) => handleSelectPreset(e.target.value)}
+            >
+              <option value="">-- Custom bug report (default) --</option>
+              <optgroup label="Frozen Pilot Subset (A6c)">
+                <option value="psf__requests-1142">psf__requests-1142 (Content-length on redirect)</option>
+                <option value="psf__requests-1376">psf__requests-1376 (Multipart byte payload)</option>
+                <option value="psf__requests-1537">psf__requests-1537 (Basename file handling)</option>
+                <option value="psf__requests-1724">psf__requests-1724 (Unicode url handling)</option>
+                <option value="psf__requests-1766">psf__requests-1766 (Session quota error)</option>
               </optgroup>
-            )}
-            <option value="custom">[Custom Bug Input]</option>
-          </select>
-        </div>
-
-        {/* Ground Truth Summary */}
-        {selectedCase && selectedCase.ground_truth_functions.length > 0 && (
-          <div className="form-group">
-            <span className="form-label">Provisional Ground Truth</span>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }} className="mono">
-              <strong>Fn:</strong> {selectedCase.ground_truth_functions.join(', ')}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }} className="mono">
-              <strong>Files:</strong> {selectedCase.ground_truth_files.join(', ')}
-            </div>
+            </select>
           </div>
         )}
 
-        {/* Bug Report Input */}
+        {/* Bug Report Textarea */}
         <div className="form-group">
-          <label className="form-label" htmlFor="bug-report-input">
-            Bug Description & Symptoms
-          </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <label className="form-label" htmlFor="bug-report-text">
+              Bug Report / Issue Statement <span style={{ color: 'var(--status-danger-text)' }}>*</span>
+            </label>
+            {bugSummary && (
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                {bugSummary.length} chars
+              </span>
+            )}
+          </div>
           <textarea
-            id="bug-report-input"
-            className="form-textarea"
-            rows={4}
-            value={customReport}
-            onChange={(e) => setCustomReport(e.target.value)}
-            disabled={isLoading}
-            placeholder="Describe the bug, traceback, or reproduction steps..."
+            id="bug-report-text"
+            className="form-textarea mono"
+            style={{ minHeight: 110, fontSize: 12, lineHeight: 1.5 }}
+            placeholder="Describe the bug, paste stack trace, error messages, or reproduction steps..."
+            value={bugSummary}
+            onChange={(e) => setBugSummary(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
-        {/* Strategy & Budget Grid */}
-        <div className="form-row">
-          <div className="form-group">
-            <label className="form-label" htmlFor="strategy-select">
-              Retrieval Strategy
-            </label>
-            <select
-              id="strategy-select"
-              className="form-select"
-              value={strategy}
-              onChange={(e) => setStrategy(e.target.value as any)}
-              disabled={isLoading}
+        {/* Investigation Modes Selection */}
+        <div className="form-group">
+          <label className="form-label" style={{ marginBottom: 6 }}>
+            Investigation Mode
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${mode === 'trace' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ justifyContent: 'flex-start', padding: '8px 10px', height: 'auto', textAlign: 'left' }}
+              onClick={() => setMode('trace')}
             >
-              <option value="graph">Graph-Guided (FalkorDB Live)</option>
-              <option value="fused">Fused RRF (Lexical + Graph)</option>
-              <option value="lexical">Lexical Baseline (BM25)</option>
-              <option value="memory">Incident Memory (Part B)</option>
-            </select>
-          </div>
+              <Compass size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Mode A: Trace</div>
+                <div style={{ fontSize: 10, color: mode === 'trace' ? '#fff' : 'var(--text-muted)', fontWeight: 400 }}>
+                  Graph-guided relationships &amp; call paths
+                </div>
+              </div>
+            </button>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="budget-input">
-              Context Budget (Tokens)
-            </label>
+            <button
+              type="button"
+              className={`btn btn-sm ${mode === 'find' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ justifyContent: 'flex-start', padding: '8px 10px', height: 'auto', textAlign: 'left' }}
+              onClick={() => setMode('find')}
+            >
+              <Search size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Mode B: Find</div>
+                <div style={{ fontSize: 10, color: mode === 'find' ? '#fff' : 'var(--text-muted)', fontWeight: 400 }}>
+                  Lexical search for symbols &amp; files
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className={`btn btn-sm ${mode === 'snippets' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ justifyContent: 'flex-start', padding: '8px 10px', height: 'auto', textAlign: 'left' }}
+              onClick={() => setMode('snippets')}
+            >
+              <Layers size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Mode C: Snippets</div>
+                <div style={{ fontSize: 10, color: mode === 'snippets' ? '#fff' : 'var(--text-muted)', fontWeight: 400 }}>
+                  Bounded code fragments &amp; lines
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className={`btn btn-sm ${mode === 'repair' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ justifyContent: 'flex-start', padding: '8px 10px', height: 'auto', textAlign: 'left' }}
+              onClick={() => setMode('repair')}
+            >
+              <Wrench size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Mode D: Trace &amp; Fix</div>
+                <div style={{ fontSize: 10, color: mode === 'repair' ? '#fff' : 'var(--text-muted)', fontWeight: 400 }}>
+                  Investigate + propose &amp; verify patch
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Context Budget & Baseline Diagnostic Controls */}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Sliders size={13} color="var(--text-muted)" />
+            <span className="form-label" style={{ margin: 0, fontSize: 11 }}>
+              Context Budget:
+            </span>
             <select
-              id="budget-input"
               className="form-select mono"
+              style={{ width: 'auto', padding: '3px 8px', fontSize: 11 }}
               value={budget}
               onChange={(e) => setBudget(Number(e.target.value))}
-              disabled={isLoading}
             >
               <option value={2000}>2,000 tokens</option>
               <option value={4000}>4,000 tokens (Standard)</option>
-              <option value={8000}>8,000 tokens (Expanded)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Execution Mode Row */}
-        <div className="form-row" style={{ marginTop: 4 }}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="mode-select">
-              Verification Mode
-            </label>
-            <select
-              id="mode-select"
-              className="form-select"
-              value={mockMode ? 'mock' : 'live'}
-              onChange={(e) => setMockMode(e.target.value === 'mock')}
-              disabled={isLoading}
-            >
-              <option value="mock">Deterministic Sandbox (Reproducible Demo)</option>
-              <option value="live">Live Git Worktree Sandbox (Test Runner)</option>
+              <option value={8000}>8,000 tokens (Extended)</option>
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="repair-toggle">
-              Repair & Verification
-            </label>
-            <select
-              id="repair-toggle"
-              className="form-select"
-              value={executeRepair ? 'yes' : 'no'}
-              onChange={(e) => setExecuteRepair(e.target.value === 'yes')}
-              disabled={isLoading}
-            >
-              <option value="yes">Run Repair State Machine</option>
-              <option value="no">Retrieval & Context Only</option>
-            </select>
-          </div>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              userSelect: 'none',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={compareBaseline}
+              onChange={(e) => setCompareBaseline(e.target.checked)}
+            />
+            Run Lexical Baseline Comparison
+          </label>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ flex: 1 }}
-            disabled={isLoading || !customReport.trim()}
+            style={{ flex: 1, padding: '9px 16px', fontWeight: 600, display: 'flex', justifyContent: 'center', gap: 6 }}
+            disabled={isLoading || !isRepoReady || !bugSummary.trim()}
           >
-            <Play size={14} />
-            {isLoading ? 'Running Investigation...' : 'Investigate Bug'}
+            {isLoading ? <Play size={14} className="spin" /> : getActionIcon()}
+            {isLoading ? 'Investigating...' : getActionLabel()}
           </button>
+
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={onReset}
+            onClick={() => {
+              setBugSummary('')
+              setSelectedCaseId('')
+              onReset()
+            }}
             disabled={isLoading}
-            title="Reset form"
+            title="Reset form and results"
           >
             <RotateCcw size={14} />
           </button>
         </div>
+
+        {!isRepoReady && (
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--status-warning-text)' }}>
+            ⚠️ Please connect or select a ready repository above to start an investigation.
+          </div>
+        )}
       </form>
     </div>
   )

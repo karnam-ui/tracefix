@@ -57,6 +57,7 @@ def test_disk_snapshot_round_trip(tmp_path: Path) -> None:
     ]
 
     from tracefix.graph.ingestion import IngestionResult
+
     result = IngestionResult(
         repo=REPO,
         revision=REV,
@@ -127,6 +128,7 @@ def test_live_falkordb_persistence_and_neighborhood_query() -> None:
     ]
 
     from tracefix.graph.ingestion import IngestionResult
+
     result = IngestionResult(
         repo=REPO,
         revision=REV,

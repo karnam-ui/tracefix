@@ -1,99 +1,107 @@
 import React from 'react'
-import { Activity, Database, GitBranch, Terminal } from 'lucide-react'
-import type { HealthResponse } from '../types'
+import { Terminal, Activity, GitBranch } from 'lucide-react'
+import type { HealthResponse, RepositorySummary } from '../types'
 
 interface AppHeaderProps {
   health: HealthResponse | null
   healthError: string | null
-  activeTab: 'workspace' | 'graph' | 'memory' | 'eval'
-  onSelectTab: (tab: 'workspace' | 'graph' | 'memory' | 'eval') => void
-  currentRevision?: string
+  activeRepo: RepositorySummary | null
+  onOpenMcpGuide: () => void
+  onOpenDiagnostics: () => void
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   health,
   healthError,
-  activeTab,
-  onSelectTab,
-  currentRevision,
+  activeRepo,
+  onOpenMcpGuide,
+  onOpenDiagnostics,
 }) => {
   return (
-    <header className="app-header">
-      <div className="brand-section">
-        <div className="logo-badge">
-          <Terminal size={18} color="#388bfd" />
-          <span>TRACEFIX</span>
+    <header className="h-14 px-5 bg-white/95 backdrop-blur-xs border-b border-slate-200/80 flex items-center justify-between sticky top-0 z-30">
+      {/* Brand & Active Repository */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
+            <Terminal className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 tracking-tight text-sm">TRACEFIX</span>
+              <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                v0.0.1
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 hidden sm:block">
+              Graph-Native Code Investigation & Verified Repair
+            </p>
+          </div>
         </div>
-        <span className="tagline">Graph-Native Bug Resolution & Verified Repair</span>
+
+        {activeRepo && (
+          <div className="hidden md:flex items-center gap-2 pl-4 border-l border-slate-200 text-xs">
+            <span className="flex items-center gap-1 font-medium text-slate-700">
+              <GitBranch className="w-3.5 h-3.5 text-slate-400" />
+              {activeRepo.name}
+            </span>
+            <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+              {activeRepo.default_branch}:{activeRepo.short_sha}
+            </span>
+          </div>
+        )}
       </div>
 
-      <div className="header-meta">
-        <nav className="nav-tabs">
-          <button
-            type="button"
-            className={`nav-tab ${activeTab === 'workspace' ? 'active' : ''}`}
-            onClick={() => onSelectTab('workspace')}
-          >
-            <Activity size={14} />
-            Investigation
-          </button>
-          <button
-            type="button"
-            className={`nav-tab ${activeTab === 'graph' ? 'active' : ''}`}
-            onClick={() => onSelectTab('graph')}
-          >
-            <GitBranch size={14} />
-            Graph Explorer
-          </button>
-          <button
-            type="button"
-            className={`nav-tab ${activeTab === 'memory' ? 'active' : ''}`}
-            onClick={() => onSelectTab('memory')}
-          >
-            <Database size={14} />
-            Incident Memory (Part B)
-          </button>
-          <button
-            type="button"
-            className={`nav-tab ${activeTab === 'eval' ? 'active' : ''}`}
-            onClick={() => onSelectTab('eval')}
-          >
-            Evaluation & Benchmarks
-          </button>
-        </nav>
-
-        {currentRevision && (
-          <span className="badge badge-neutral mono" title={`Target Revision: ${currentRevision}`}>
-            rev: {currentRevision.slice(0, 8)}
-          </span>
-        )}
-
-        {/* Real Live Backend Health Badge */}
+      {/* Actions & Health Badges */}
+      <div className="flex items-center gap-2.5">
+        {/* Backend / FalkorDB Status */}
         {health ? (
           <div
-            className={`status-pill ${
-              health.status === 'ok' && health.falkordb_connected ? 'online' : 'degraded'
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+              health.falkordb_connected
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
             }`}
-            title={`API: ${health.status} | FalkorDB: ${
-              health.falkordb_connected ? 'Connected' : 'Disconnected'
-            } | Cases: ${health.active_cases_count} | Graphs: ${health.persisted_graphs_count}`}
+            title={`Backend: ${health.status} | FalkorDB: ${
+              health.falkordb_connected ? 'Connected' : 'Offline (using Disk Snapshots)'
+            }`}
           >
-            <span className="status-dot" />
-            <span>
-              {health.falkordb_connected ? 'LIVE (FalkorDB OK)' : 'DEGRADED (FalkorDB OFFLINE)'}
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                health.falkordb_connected ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            />
+            <span className="hidden sm:inline">
+              {health.falkordb_connected ? 'Live FalkorDB' : 'Disk AST Snapshot'}
             </span>
           </div>
         ) : healthError ? (
-          <div className="status-pill offline" title={healthError}>
-            <span className="status-dot" />
-            <span>BACKEND DISCONNECTED</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span>Backend Disconnected</span>
           </div>
-        ) : (
-          <div className="status-pill degraded">
-            <span className="status-dot" />
-            <span>CONNECTING...</span>
-          </div>
-        )}
+        ) : null}
+
+        {/* MCP Guide Button */}
+        <button
+          type="button"
+          onClick={onOpenMcpGuide}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors"
+          title="Connect Claude Desktop, Cursor, or Antigravity via MCP"
+        >
+          <Terminal className="w-3.5 h-3.5 text-blue-600" />
+          <span>MCP Setup</span>
+        </button>
+
+        {/* Diagnostics & Benchmarks Button */}
+        <button
+          type="button"
+          onClick={onOpenDiagnostics}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors"
+          title="View Historical Benchmarks & Incident Memory"
+        >
+          <Activity className="w-3.5 h-3.5 text-purple-600" />
+          <span className="hidden sm:inline">Diagnostics</span>
+        </button>
       </div>
     </header>
   )
