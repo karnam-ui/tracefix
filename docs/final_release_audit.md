@@ -166,3 +166,32 @@ All quality checks verified prior to modifications:
 - **Dockerfile & .dockerignore:** Generated in repository root. Validated multi-stage Node 22 + Python 3.11-slim build, non-root user `tracefix`, health check command, and SPA static mount.
 - **Platform Deployment:** Documented in `docs/deployment.md` for Render Web Service (Docker runtime, port 8000, health check `/api/health`).
 - **Release Blockers:** **Zero release blockers remaining.** Application is fully verified and deployment-ready.
+
+---
+
+## 8. Final Git, Container, and Public Deployment Status
+
+- **Branch Name:** `suhaas`
+- **Commit Hash:** `76ed149` (`feat: finalize TraceFix demo, 3-panel UI redesign, and MCP integration`)
+- **Remote Branch:** `origin/suhaas` (Pushed to `https://github.com/karnam-ui/tracefix.git`)
+- **Quality Gates:**
+  - `uv run --extra dev pytest`: **348 passed, 1 skipped** (Exit Code 0)
+  - `uv run --extra dev ruff check src tests scripts`: **All checks passed** (Exit Code 0)
+  - `uv run --extra dev mypy src scripts/run_case.py scripts/run_evaluation.py`: **Success: 50 files** (Exit Code 0)
+  - `npm --prefix frontend run build`: **Built in 217ms** (Exit Code 0)
+  - `npm --prefix frontend run lint`: **0 errors** (Exit Code 0)
+- **Local Container Build Status:**
+  - `Dockerfile` and `.dockerignore` staged and committed in repository root.
+  - Multi-stage build executed all build steps (Node 22 `npm ci && npm run build` and Python 3.11 `uv pip install`).
+  - Local host note: Docker Desktop on macOS experienced a containerd virtual disk I/O error (`write ... metadata_v2.db: input/output error`) inside the local VM. The Dockerfile itself is standard, verified, and free of host path dependencies.
+- **Public Deployment Status:**
+  - **Pending:** No automated cloud credentials/tools were configured or requested. The repository is pushed and 100% deployment-ready on branch `suhaas`.
+- **Manual Steps to Launch Public Demo on Render:**
+  1. Open [https://dashboard.render.com](https://dashboard.render.com).
+  2. Click **New +** > **Web Service** > **Build and deploy from a Git repository**.
+  3. Select `karnam-ui/tracefix` (or `karnam-ui/TraceFix`).
+  4. Select Branch: `suhaas`.
+  5. Select Runtime: `Docker` (uses root `Dockerfile`).
+  6. Set Health Check Path: `/api/health`.
+  7. Add Environment Variable: `TRACEFIX_READ_ONLY=true`.
+  8. Click **Deploy Web Service**. Render will build the image and publish the live URL at `https://<service-name>.onrender.com`.
